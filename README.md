@@ -1,280 +1,289 @@
 # BookHive Dashboard
 
-**BookHive Dashboard** is a production-like portfolio project for book review and library management. It is built with Laravel, React/Inertia, Tailwind CSS, MySQL/MariaDB, Spatie Laravel Permission, and JWT API authentication.
+A Laravel, React, and Inertia.js book management platform with role-based access, review moderation, JWT API, Redis caching, Docker, and automated testing.
 
-The project is designed as a public demo application for recruiters and hiring teams. Demo data is protected and resets automatically every six hours.
+- [Live Demo](https://bookhive-dashboard.frengkipurba.com/)
+- [Postman Documentation](docs/postman/README.md)
+- [Postman Collection](docs/postman/BookHive_API.postman_collection.json)
 
-> © 2026 Developed by Frengki Josua Purba
+---
 
-## Features
+## Project Overview
 
-- Modern responsive dashboard UI
-- Role-based access control with Spatie Laravel Permission
-- Public login and registration
-- Public registration role selection: Admin, Editor, Reviewer, Customer
-- Private owner account from `.env`
-- Protected public demo accounts
-- Book catalog management
-- Cover image upload and preview
-- Book detail pages with ratings and approved reviews
-- Review workflow: pending, approved, rejected
-- Review moderation with notes
-- Average rating calculated from approved reviews only
-- User, role, and permission management
-- Protected core roles and permissions
-- Settings management
-- Audit logs
-- Demo reset system every six hours
-- Manual demo reset for the private owner only
-- JWT API for public/protected integrations
-- Public API documentation page and Markdown docs
-- cPanel/shared-hosting deployment guide
+**BookHive Dashboard** is a production-oriented full-stack portfolio application designed for book catalog management, user reviews, and editorial moderation. Built as a modern monolith using Laravel 10 and React 18 via Inertia.js, the system features fine-grained Role-Based Access Control (RBAC), a dual authentication architecture (session-based web UI and stateless JWT API), Redis caching with targeted invalidation, and automated testing pipelines. The platform includes an automated demo environment reset engine to safely maintain public interactive demonstrations without compromising private owner data.
+
+---
+
+## Key Highlights
+
+- **Backend Architecture**: Laravel 10 application running on PHP 8.2.
+- **Frontend Experience**: Single-page application UI built with React 18, Inertia.js, Tailwind CSS, and Headless UI.
+- **Access Control**: Fine-grained RBAC powered by Spatie Laravel Permission with 5 distinct role tiers.
+- **Review Moderation Pipeline**: Multi-stage review lifecycle (pending, approved, rejected) with moderation audit notes.
+- **Dual Authentication**: Session authentication for web users and Tymon JWTAuth bearer tokens for RESTful API clients.
+- **Redis Caching Engine**: High-performance targeted caching using explicit keys and targeted invalidation after related write operations.
+- **Containerized Environment**: Complete Docker Compose setup with Nginx, PHP 8.2-FPM, MariaDB 10.11, and Redis 7.
+- **Quality Assurance**: Automated CI pipeline via GitHub Actions enforcing 47 feature and unit tests (166 assertions).
+
+---
+
+## Screenshots
+
+![Dashboard Overview](public/images/demo/bookhive-dashboard-overview.webp)
+
+![Book Catalog](public/images/demo/bookhive-book-catalog.webp)
+
+![Review Moderation Pipeline](public/images/demo/bookhive-review-moderation.webp)
+
+![Role Management](public/images/demo/bookhive-role-management.webp)
+
+![Mobile Responsive UI](public/images/demo/bookhive-mobile-overview.webp)
+
+---
+
+## Core Features
+
+### Book Management
+- Full catalog management with title, author, category, publication year, and status control (`draft` / `published`).
+- Cover image upload handling with public URL resolution and storage cleanup.
+- Dynamic average rating aggregation calculated exclusively from approved user reviews.
+
+### Review Workflow
+- Authenticated review submission queuing reviews into a `pending` moderation state.
+- Moderation dashboard allowing authorized staff to approve or reject reviews with explanatory notes.
+- Strict ownership rules: users can only update or delete their own `pending` or `rejected` reviews. Approved reviews are immutable via public interfaces.
+
+### Authentication and Authorization
+- Dual auth system: Laravel Breeze session authentication for web UI and JWT bearer tokens for API clients.
+- Spatie Laravel Permission integration managing 5 roles: `Super Admin` (Private Owner), `Admin`, `Editor`, `Reviewer`, and `Customer`.
+- `Super Admin` acts as the private owner role, protected from deletion or privilege revocation.
+
+### Demo Safety
+- Pre-configured public demo accounts with protected status preventing accidental lockout.
+- Automated and manual environment reset (`php artisan demo:reset`) restoring core seed data while preserving private owner credentials.
+
+---
 
 ## Tech Stack
 
-- **Backend:** Laravel 10, PHP 8.1+
-- **Frontend:** React, Inertia.js, Tailwind CSS, Vite
-- **Database:** MySQL/MariaDB
-- **Auth:** Laravel Breeze session auth + JWT API auth
-- **RBAC:** Spatie Laravel Permission
-- **API:** JSON responses with JWT bearer tokens
-- **Hosting target:** shared hosting/cPanel
+| Layer | Technologies |
+| :--- | :--- |
+| **Backend** | PHP 8.2, Laravel 10, Tymon JWTAuth, Spatie Laravel Permission |
+| **Frontend** | React 18, Inertia.js, Tailwind CSS, Vite, Headless UI, Heroicons |
+| **Infrastructure** | Docker Compose, Nginx (Alpine), MariaDB 10.11, Redis 7 (Alpine) |
+| **Quality & Tools** | PHPUnit 10, GitHub Actions CI, Postman Collection v2.1 |
 
-## Roles
+---
 
-### Private owner role
-Private owner account. Full access. Credentials are loaded from `.env` and must never be shown publicly.
+## Role Matrix
 
-### Admin
-Can manage users, roles, permissions, books, reviews, non-critical settings, audit logs, and API docs. Cannot assign/delete protected owner access or break protected/core records.
+| Role | Primary Access & Responsibilities |
+| :--- | :--- |
+| **Super Admin** | Private owner account. Full system access, demo reset management, and system administration. |
+| **Admin** | Manages users, roles, permissions, books, reviews, audit logs, and settings. Cannot modify Super Admin. |
+| **Editor** | Manages book catalog entries and cover images. Views review queues without moderation privileges. |
+| **Reviewer** | Explores book catalog, submits reviews, and manages personal pending/rejected reviews. |
+| **Customer** | Explores published books, views approved reviews, submits reviews, and manages personal profile. |
 
-### Editor
-Can manage books and view reviews. Cannot manage users, roles, permissions, or settings.
+---
 
-### Reviewer
-Can view books, create reviews, and edit own pending/rejected reviews.
+## Live Demo & Demo Accounts
 
-### Customer
-Can view books, view approved reviews, create simple reviews, and update own profile.
+### Live Demo URL
+[https://bookhive-dashboard.frengkipurba.com/](https://bookhive-dashboard.frengkipurba.com/)
 
-## Public Demo Accounts
-
-These accounts are safe to publish:
+### Safe Public Demo Accounts
 
 | Role | Email | Password |
-|---|---|---|
-| Admin | `admin@demo.com` | `password` |
-| Editor | `editor@demo.com` | `password` |
-| Reviewer | `reviewer@demo.com` | `password` |
-| Customer | `customer@demo.com` | `password` |
+| :--- | :--- | :--- |
+| **Customer** (Default) | `customer@demo.com` | `password` |
+| **Reviewer** | `reviewer@demo.com` | `password` |
+| **Editor** | `editor@demo.com` | `password` |
+| **Admin** | `admin@demo.com` | `password` |
 
-The private owner credentials are private and are not included in public pages, README demo credentials, or API docs.
+> ⚠️ **SECURITY WARNING**: These credentials are provided strictly for public demo exploration. Do not reuse these passwords for personal accounts. Private owner (`Super Admin`) credentials are stored securely in environment variables and are never published.
 
-## Demo Reset
+---
 
-The public demo environment resets automatically every six hours.
+## Local Development with Docker
 
-Protected by design:
+The primary recommended local development environment uses Docker Compose:
 
-- private owner is never deleted.
-- private owner email/password are not modified during demo reset.
-- Demo accounts are restored.
-- Core roles and permissions are restored.
-- Protected sample books/reviews are restored.
-- Public-created demo data is cleaned safely.
+```bash
+# 1. Clone repository
+git clone https://github.com/frnqpur/bookhive-dashboard.git
+cd bookhive-dashboard
 
-Manual reset command:
+# 2. Copy Docker environment configuration
+cp .env.docker.example .env.docker
+```
+
+Generate a persistent `APP_KEY` before starting the containers (`docker/entrypoint.sh` requires `APP_KEY` to be set):
+
+```bash
+php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
+```
+
+Copy the generated key into `.env.docker`:
+```env
+APP_KEY=base64:YOUR_GENERATED_KEY_HERE
+```
+
+Database migrations run automatically on container startup (`DOCKER_AUTO_MIGRATE=true`). For database seeding, choose one of two options:
+
+- **Option A**: Set `DOCKER_AUTO_SEED=true` in `.env.docker` before starting containers, OR
+- **Option B**: Run database seeders after starting containers: `docker compose exec app php artisan db:seed`
+
+Build and start containers:
+```bash
+docker compose up -d --build
+```
+
+Access the application in your browser:
+```text
+http://localhost:8000
+```
+
+To stop containers:
+```bash
+docker compose down
+```
+
+---
+
+## Manual Local Setup
+
+As an alternative to Docker, you can run BookHive natively:
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan jwt:secret
+php artisan migrate --seed
+npm install
+npm run dev
+php artisan serve
+```
+
+Requirements: PHP 8.2, Composer 2, Node.js 20, MySQL/MariaDB, and Redis (optional if using `CACHE_DRIVER=file` or `array`).
+
+---
+
+## Testing
+
+Run the automated PHPUnit test suite using Docker:
+
+```bash
+docker compose run --rm test
+```
+
+### Validated Test Results
+```text
+47 tests passed (166 assertions, 0 failures)
+```
+
+The test runner utilizes SQLite in-memory databases and isolated array cache drivers for zero-side-effect test execution.
+
+---
+
+## GitHub Actions CI
+
+Continuous integration is automated via GitHub Actions ([.github/workflows/phpunit.yml](.github/workflows/phpunit.yml)):
+- Triggers on pushes and pull requests to `main` and `feature/**` branches.
+- Sets up PHP 8.2, Node 20, and SQLite in-memory test databases.
+- Runs `composer install`, `npm ci`, `npm run build`, and executes the 47 PHPUnit test cases automatically.
+
+---
+
+## Redis Caching Architecture
+
+BookHive employs targeted caching via the `App\Support\BookHiveCache` helper:
+- **Public Contact Data**: `bookhive:settings:public_contact:v1` (TTL 86400s)
+- **Admin Role Distribution**: `bookhive:dashboard:admin:users_by_role:v1` (TTL 3600s)
+
+### Key Design Principles:
+- **Explicit Keys**: Deterministic key naming without relying on `Cache::tags()`, compatible with the Redis, file, and array cache drivers used by the project.
+- **Targeted Invalidation**: Proactive cache clearance triggered after related write operations (user registration, user creation/update/deletion, profile self-delete, setting updates, or demo reset).
+- **No Global User Leakage**: Avoids caching user-specific or permission-dependent dashboard metrics globally.
+
+---
+
+## API Documentation
+
+BookHive provides a complete RESTful API documented via Postman:
+- [Postman Integration Guide](docs/postman/README.md)
+- [Postman Collection (v2.1)](docs/postman/BookHive_API.postman_collection.json)
+- [Postman Environment File](docs/postman/BookHive_Local.postman_environment.json)
+
+### Main Canonical Endpoints:
+- `POST /api/client/register` (Public registration)
+- `POST /api/client/login` (Obtain JWT bearer token)
+- `GET /api/client/me` (Authenticated user profile)
+- `GET /api/client/books` (Paginated published books)
+- `POST /api/client/books/{book}/reviews` (Submit pending review)
+- `GET /api/health` (System health check)
+
+All protected endpoints require `Authorization: Bearer <token>`. Tokens expire in 3600 seconds.
+
+---
+
+## Demo Reset Engine
+
+Public demo environments can be reset safely to clean user-generated clutter while keeping system integrity intact:
 
 ```bash
 php artisan demo:reset
 ```
 
-Backward-compatible alias:
+### Safety Guarantees:
+- Preserves the private `Super Admin` owner account and email/password settings.
+- Restores core roles, permissions, default application settings, and sample books.
+- Automatically clears managed Redis cache keys upon completion.
 
-```bash
-php artisan bookhive:demo-reset
-```
+---
 
-Scheduler command for cPanel:
-
-```bash
-* * * * * php /home/USERNAME/bookhive-dashboard/artisan schedule:run >> /dev/null 2>&1
-```
-
-## Local Installation
-
-```bash
-git clone <your-repository-url>
-cd bookhive-dashboard
-composer install
-npm install
-cp .env.example .env
-php artisan key:generate
-php artisan jwt:secret
-```
-
-Configure `.env`:
-
-```env
-APP_NAME="BookHive Dashboard"
-APP_URL=http://127.0.0.1:8000
-
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=bookhive_dashboard
-DB_USERNAME=root
-DB_PASSWORD=
-
-SUPER_ADMIN_NAME="Frengki Josua Purba"
-SUPER_ADMIN_EMAIL="your-private-email@example.com"
-SUPER_ADMIN_PASSWORD="strong-private-password"
-```
-
-Run database setup:
-
-```bash
-php artisan migrate:fresh --seed
-```
-
-Run development servers:
-
-```bash
-php artisan serve
-npm run dev
-```
-
-Open:
+## Project Structure
 
 ```text
-http://127.0.0.1:8000/login
+bookhive_dashboard/
+├── app/                  # Controllers, Models, Middleware, Resources, Support
+├── config/               # Application, Cache, Database, Auth configuration
+├── database/             # Migrations, Seeders, Factories
+├── docker/               # Nginx and PHP container configurations
+├── docs/                 # Postman documentation & environment files
+├── resources/js/         # React 18 + Inertia.js components & pages
+├── routes/               # Web, API, Auth, and Console route definitions
+├── tests/                # Feature & Unit PHPUnit test suite
+├── .github/workflows/    # GitHub Actions CI workflow definition
+└── docker-compose.yml    # Docker service definitions (App, Nginx, MariaDB, Redis)
 ```
 
-## Production Build
-
-```bash
-composer install --no-dev --optimize-autoloader
-npm install
-npm run build
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan storage:link
-```
-
-For cPanel, see:
-
-```text
-DEPLOYMENT_CPANEL.md
-```
-
-## API Documentation
-
-Public API docs page:
-
-```text
-/api-docs
-```
-
-Dashboard API docs page:
-
-```text
-/dashboard/api-docs
-```
-
-Markdown docs:
-
-```text
-docs/API.md
-```
-
-Postman collection:
-
-```text
-docs/bookhive_api.postman_collection.json
-```
-
-## Main API Endpoints
-
-Public:
-
-```text
-POST /api/client/register
-POST /api/client/login
-GET  /api/client/books
-GET  /api/client/books/{id-or-slug}
-GET  /api/client/books/{id-or-slug}/reviews
-```
-
-Protected with `Authorization: Bearer <token>`:
-
-```text
-POST   /api/client/logout
-GET    /api/client/me
-GET    /api/client/my-reviews
-POST   /api/client/books/{id-or-slug}/reviews
-PATCH  /api/client/reviews/{review}
-DELETE /api/client/reviews/{review}
-```
-
-## Testing
-
-The test suite covers:
-
-- Auth and register role selection
-- Protected account behavior
-- Role/permission enforcement
-- Book CRUD basics
-- Review workflow and average rating update
-- Demo reset command
-- JWT API review flow
-
-Run:
-
-```bash
-php artisan test
-```
-
-The test environment uses SQLite in memory via `phpunit.xml`.
-
-## Screenshots
-
-Add screenshots after deployment:
-
-```text
-docs/screenshots/login.png
-docs/screenshots/dashboard.png
-docs/screenshots/books.png
-docs/screenshots/book-detail.png
-docs/screenshots/reviews.png
-docs/screenshots/api-docs.png
-```
-
-## Timezone
-
-BookHive uses `Asia/Jakarta` (WIB) by default. Keep `APP_TIMEZONE=Asia/Jakarta` in production so dashboard timestamps, audit logs, and demo reset times stay synchronized.
+---
 
 ## Security Notes
 
-- Do not commit `.env`.
-- Keep `APP_DEBUG=false` in production.
-- Keep the private owner email/password private.
-- Public demo accounts are protected and resettable.
-- Admin demo cannot assign protected owner access.
-- Core roles and core permissions are protected.
-- Public API does not expose private owner credentials.
-- Use HTTPS in production.
-- Run `php artisan demo:reset` instead of `migrate:fresh` for demo cleanup.
+- No secrets, private credentials, or `.env` files are committed to version control.
+- API endpoints enforce JWT bearer token verification and Spatie permission checks.
+- Public registration restricts high-privilege `Super Admin` account creation.
+- Postman documentation explicitly marks destructive requests and uses isolated local environment variables.
 
-## Known Limitations
+---
 
-- Charts are lightweight SVG components, not a full BI dashboard.
-- Email sending depends on production mail configuration.
-- Queue workers are not required for the demo; `QUEUE_CONNECTION=sync` is acceptable for shared hosting.
-- cPanel environments vary; some may require manual symlink or uploaded `vendor` folder.
+## Project Status
 
-## Developer
+**Active Portfolio Project**
 
-**Frengki Josua Purba**
+Completed Milestones:
+- [x] Full-stack Inertia.js + React 18 Web Dashboard
+- [x] Multi-tier RBAC & Review Moderation System
+- [x] JWT API & Complete Postman Collection
+- [x] Targeted Redis Caching Architecture
+- [x] Docker Compose Local Infrastructure
+- [x] Automated GitHub Actions CI Pipeline
 
-© 2026 Developed by Frengki Josua Purba
+---
+
+## License
+
+The project metadata in `composer.json` declares the MIT license. A standalone `LICENSE` file is not currently included in the repository.
