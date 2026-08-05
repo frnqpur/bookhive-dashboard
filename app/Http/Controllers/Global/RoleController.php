@@ -7,13 +7,14 @@ use App\Http\Requests\Global\StoreUpdateRoleRequest;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\AuditLogger;
+use App\Support\BookHiveCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Spatie\Permission\PermissionRegistrar;
-use App\Support\AuditLogger;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\PermissionRegistrar;
 
 class RoleController extends Controller
 {
@@ -109,6 +110,8 @@ class RoleController extends Controller
             app(PermissionRegistrar::class)->forgetCachedPermissions();
         }
 
+        BookHiveCache::forgetAdminUsersByRole();
+
         AuditLogger::record($id ? 'edit role' : 'create role', $role, $id ? 'Role updated.' : 'Role created.', $oldValues, array_merge($role->only(['name', 'slug', 'description', 'is_active', 'user_type', 'record_access']), ['permissions' => $role->permissions()->pluck('name')->values()->all()]), $actor, $request);
 
         return redirect()->route('dashboard.global.roles.list')->with('success', $id ? 'Role updated successfully.' : 'Role created successfully.');
@@ -146,6 +149,7 @@ class RoleController extends Controller
         $oldValues = array_merge($role->only(['name', 'slug', 'description', 'is_active']), ['permissions' => $role->permissions()->pluck('name')->values()->all()]);
         $role->delete();
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        BookHiveCache::forgetAdminUsersByRole();
 
         AuditLogger::record('delete role', $role, 'Role deleted.', $oldValues, [], $request->user(), $request);
 

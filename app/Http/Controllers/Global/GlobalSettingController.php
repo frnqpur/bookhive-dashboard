@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Global;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Global\UpdateSettingRequest;
 use App\Models\AppSetting;
+use App\Support\BookHiveCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
@@ -47,6 +48,8 @@ class GlobalSettingController extends Controller
 
         $oldValues = $setting->only(['key', 'value', 'type', 'group', 'is_public', 'is_protected']);
         $setting->update(['value' => $this->normalizeValue($validated['value'] ?? null, $setting->type)]);
+
+        BookHiveCache::forgetPublicContact();
 
         AuditLogger::record('update settings', $setting, 'Application setting updated.', $oldValues, $setting->only(['key', 'value', 'type', 'group', 'is_public', 'is_protected']), $actor, $request);
 

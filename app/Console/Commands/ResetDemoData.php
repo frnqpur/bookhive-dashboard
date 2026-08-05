@@ -10,6 +10,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\AuditLogger;
+use App\Support\BookHiveCache;
 use Database\Seeders\AppSettingSeeder;
 use Database\Seeders\BookHiveSampleDataSeeder;
 use Database\Seeders\CoreRolePermissionSeeder;
@@ -84,6 +85,8 @@ class ResetDemoData extends Command
                 $summary['restored_sample_books'] = Book::where('is_seeded', true)->where('is_protected', true)->count();
                 $summary['candidate_cover_files'] = $candidateCoverFiles;
             });
+
+            BookHiveCache::forgetAllManagedKeys();
 
             if (! $this->option('skip-storage-cleanup')) {
                 $summary['deleted_upload_files'] = $this->deleteUnreferencedPublicCoverUploads($summary['candidate_cover_files'] ?? []);

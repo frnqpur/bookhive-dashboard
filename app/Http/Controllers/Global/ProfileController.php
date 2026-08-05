@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Global;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Support\BookHiveCache;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -76,6 +77,7 @@ class ProfileController extends Controller
         Auth::logout();
 
         $user->delete();
+        BookHiveCache::forgetAdminUsersByRole();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
