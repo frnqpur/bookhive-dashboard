@@ -1,0 +1,104 @@
+services:
+  app:
+    image: bookhive-dashboard-app:local
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bookhive_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    env_file:
+      - .env.docker
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_DATABASE=bookhive_dashboard
+      - DB_USERNAME=bookhive_user
+      - DB_PASSWORD=bookhive_local_pass
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - CACHE_DRIVER=redis
+      - SESSION_DRIVER=file
+      - QUEUE_CONNECTION=sync
+      - DOCKER_AUTO_MIGRATE=${DOCKER_AUTO_MIGRATE:-true}
+      - DOCKER_AUTO_SEED=${DOCKER_AUTO_SEED:-false}
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+    container_name: bookhive_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: bookhive_mariadb
+    restart: unless-stopped
+    env_file:
+      - .env.docker
+    environment:
+      MYSQL_DATABASE: bookhive_dashboard
+      MYSQL_USER: bookhive_user
+      MYSQL_PASSWORD: bookhive_local_pass
+      MYSQL_ROOT_PASSWORD: bookhive_root_local_pass
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: bookhive_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  test:
+    image: bookhive-dashboard-app:local
+    pull_policy: never
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    env_file:
+      - .env.docker
+    environment:
+      APP_ENV: testing
+      APP_DEBUG: "true"
+      CACHE_DRIVER: array
+      SESSION_DRIVER: array
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      DB_CONNECTION: sqlite
+      DB_DATABASE: ":memory:"
+      DOCKER_AUTO_MIGRATE: "false"
+      DOCKER_AUTO_SEED: "false"
+    entrypoint: []
+    command: php artisan test
+    profiles:
+      - test
+
+volumes:
+  mariadb_data:
+  redis_data:

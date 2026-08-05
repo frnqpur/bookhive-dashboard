@@ -33,3 +33,4 @@ storage/framework/views/*
 !storage/framework/views/.gitignore
 bootstrap/cache/*.php
 !bootstrap/cache/.gitignore
+.env.docker
