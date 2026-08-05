@@ -1,0 +1,1205 @@
+{
+	"info": {
+		"_postman_id": "b8a9202a-9f4a-4318-874e-6e2101e4d412",
+		"name": "BookHive API",
+		"description": "Postman API Collection for BookHive Dashboard (Laravel 10 JWT API).\n\nKey Information:\n- Authentication uses Tymon JWTAuth via `Authorization: Bearer <token>`.\n- Contains both Canonical RESTful endpoints and Legacy/Compatibility aliases.\n- Submitted reviews default to `pending` status and require moderation by an Admin/Reviewer in the dashboard.\n- Collection is intended strictly for local development or demo environment testing. Do not run elevated role or destructive requests against production environments.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "1.1 Register Customer Account",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Postman Customer\",\n  \"email\": \"postman.customer.{{$timestamp}}@example.com\",\n  \"role\": \"Customer\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/client/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"register"
+							]
+						},
+						"description": "Register a new public API account with Customer role using a timestamped unique email for repeatable execution. Generates a JWT token automatically upon registration."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Response contains token and user payload\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"    pm.expect(json.data.token_type).to.eql(\"bearer\");",
+									"    pm.expect(json.data).to.have.property(\"user\");",
+									"});",
+									"if (pm.response.code === 201 && json && json.data && json.data.token) {",
+									"    pm.environment.set(\"access_token\", json.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "1.2 Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"{{user_password}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/client/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"login"
+							]
+						},
+						"description": "Authenticate user credentials and obtain a JWT bearer token. Token expires in 3600 seconds."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Token returned with valid expiry\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"    pm.expect(json.data.token_type).to.eql(\"bearer\");",
+									"    pm.expect(json.data.expires_in).to.be.a(\"number\");",
+									"});",
+									"if (pm.response.code === 200 && json && json.data && json.data.token) {",
+									"    pm.environment.set(\"access_token\", json.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "1.3 Get Current User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"me"
+							]
+						},
+						"description": "Retrieve profile, assigned roles, and granted permissions of the currently authenticated JWT user."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"User payload returned successfully\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"    pm.expect(json.data.user).to.have.property(\"email\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "1.4 Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"logout"
+							]
+						},
+						"description": "Invalidate the active JWT token. Clears access_token from the active environment only upon successful 200 response."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Logout successful\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"});",
+									"if (pm.response.code === 200) {",
+									"    pm.environment.unset(\"access_token\");",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "2. Books",
+			"item": [
+				{
+					"name": "2.1 List Published Books",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/books?search=&sort_field=created_at&sort_order=desc&per_page=8&page=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"books"
+							],
+							"query": [
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search string for title, slug, ISBN, author, category"
+								},
+								{
+									"key": "sort_field",
+									"value": "created_at",
+									"description": "Allowed: id, title, slug, ISBN_10, ISBN_13, author, category, status, average_rating, total_reviews, created_at, updated_at"
+								},
+								{
+									"key": "sort_order",
+									"value": "desc",
+									"description": "Allowed: asc, desc"
+								},
+								{
+									"key": "per_page",
+									"value": "8",
+									"description": "Min: 1, Max: 50"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Retrieve paginated list of published books. Saves book_id and book_slug from the first item to environment."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Books pagination structure is valid\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"    pm.expect(json.data.data).to.be.an(\"array\");",
+									"    pm.expect(json.data).to.have.property(\"links\");",
+									"    pm.expect(json.data).to.have.property(\"meta\");",
+									"});",
+									"if (pm.response.code === 200 && json && json.data && json.data.data && json.data.data.length > 0) {",
+									"    pm.environment.set(\"book_id\", json.data.data[0].id);",
+									"    pm.environment.set(\"book_slug\", json.data.data[0].slug);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "2.2 Get Book Detail by ID or Slug",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/books/{{book_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"books",
+								"{{book_id}}"
+							]
+						},
+						"description": "Retrieve detailed information for a single published book. Path parameter accepts numeric ID or slug string."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Book detail returned successfully\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"    pm.expect(json.data).to.have.property(\"book\");",
+									"});",
+									"if (pm.response.code === 200 && json && json.data && json.data.book) {",
+									"    pm.environment.set(\"book_id\", json.data.book.id);",
+									"    pm.environment.set(\"book_slug\", json.data.book.slug);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "2.3 Create Book",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"BookHive Postman Sample {{$timestamp}}\",\n  \"author\": \"BookHive API\",\n  \"category\": \"Technology\",\n  \"description\": \"Sample book created through the BookHive Postman collection.\",\n  \"published_year\": 2026,\n  \"status\": \"published\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/client/createBook",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"createBook"
+							]
+						},
+						"description": "WARNING: Modifies database records. Requires Super Admin or user with `books.manage` permission. Uses timestamp in title for unique slug generation. Optional ISBN_10 and ISBN_13 are omitted by default to allow repeatable execution."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Book created successfully\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"    pm.expect(json.data.book).to.have.property(\"id\");",
+									"});",
+									"if (pm.response.code === 201 && json && json.data && json.data.book) {",
+									"    pm.environment.set(\"book_id\", json.data.book.id);",
+									"    pm.environment.set(\"book_slug\", json.data.book.slug);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "3. Reviews",
+			"item": [
+				{
+					"name": "3.1 List Approved Reviews for Book",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/books/{{book_id}}/reviews?per_page=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"books",
+								"{{book_id}}",
+								"reviews"
+							],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Retrieve paginated list of approved reviews for a specific book."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Approved reviews pagination structure is valid\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"    pm.expect(json.data.data).to.be.an(\"array\");",
+									"    pm.expect(json.data).to.have.property(\"links\");",
+									"    pm.expect(json.data).to.have.property(\"meta\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "3.2 List My Reviews",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/my-reviews?status=&per_page=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"my-reviews"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "",
+									"description": "Filter by status: pending, approved, or rejected"
+								},
+								{
+									"key": "per_page",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Retrieve paginated list of reviews submitted by the currently authenticated user."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"User reviews retrieved successfully\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"    pm.expect(json.data.data).to.be.an(\"array\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "3.3 Submit Review for Book",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rating\": 5,\n  \"title\": \"Excellent Book\",\n  \"body\": \"This review was submitted from the BookHive Postman collection.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/client/books/{{book_id}}/reviews",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"books",
+								"{{book_id}}",
+								"reviews"
+							]
+						},
+						"description": "Submit a review for a published book. Review defaults to `pending` status and awaits moderation."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 201 Created\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Review submitted and status is pending\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"    pm.expect(json.data.review.status).to.eql(\"pending\");",
+									"});",
+									"if (pm.response.code === 201 && json && json.data && json.data.review && json.data.review.id) {",
+									"    pm.environment.set(\"review_id\", json.data.review.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "3.4 Update My Pending or Rejected Review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rating\": 4,\n  \"title\": \"Updated Review\",\n  \"body\": \"This review was updated through the Postman collection.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/client/reviews/{{review_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"reviews",
+								"{{review_id}}"
+							]
+						},
+						"description": "Update an existing review. Requires owner (`created_by === user.id`), `reviews.update-own` permission, and review status must be `pending` or `rejected`. Approved reviews cannot be updated."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Review updated successfully\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "3.5 Delete My Pending or Rejected Review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/reviews/{{review_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"reviews",
+								"{{review_id}}"
+							]
+						},
+						"description": "WARNING: Destructive action. Soft-deletes an unapproved review created by the authenticated user."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Review deleted successfully\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "4. System & Health",
+			"item": [
+				{
+					"name": "4.1 Health Check",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						},
+						"description": "Check basic API service health and version."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Service health is valid\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"    pm.expect(json.data.service).to.eql(\"BookHive Dashboard API\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "5. Legacy & Compatibility",
+			"item": [
+				{
+					"name": "5.1 Current User Alias",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/user",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"user"
+							]
+						},
+						"description": "Backward-compatible alias for GET /api/client/me."
+					},
+					"response": []
+				},
+				{
+					"name": "5.2 Book Detail Alias",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/book/{{book_slug}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"book",
+								"{{book_slug}}"
+							]
+						},
+						"description": "Backward-compatible alias for GET /api/client/books/{book} using book slug."
+					},
+					"response": []
+				},
+				{
+					"name": "5.3 Book Reviews Alias",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/book/{{book_slug}}/bookReviews",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"book",
+								"{{book_slug}}",
+								"bookReviews"
+							]
+						},
+						"description": "Backward-compatible alias for GET /api/client/books/{book}/reviews."
+					},
+					"response": []
+				},
+				{
+					"name": "5.4 Submit Review Legacy",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"book_id\": \"{{book_id}}\",\n  \"rating\": 5,\n  \"title\": \"Legacy API Review\",\n  \"body\": \"Submitted using the compatibility endpoint.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/client/createBookReview",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"createBookReview"
+							]
+						},
+						"description": "Backward-compatible alias for POST /api/client/reviews accepting `book_id` in request body."
+					},
+					"response": []
+				},
+				{
+					"name": "5.5 JWT Compatibility Endpoint (Does Not Issue Token)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/getJwtToken",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"getJwtToken"
+							]
+						},
+						"description": "NOTE: Does NOT generate or issue JWT tokens. Endpoint checks reachability. Login (`POST /api/client/login`) is the canonical endpoint for obtaining tokens. Returns 204 No Content if Accept: application/json header is omitted."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 200 OK\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Endpoint reachable notification received\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(true);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "6. Error Examples",
+			"item": [
+				{
+					"name": "6.1 Login Validation Error",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/client/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"login"
+							]
+						},
+						"description": "Demonstrates 422 Unprocessable Content response on invalid login payload."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 422 Unprocessable Content\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"pm.test(\"Validation errors returned\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(false);",
+									"    pm.expect(json.data).to.have.property(\"errors\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "6.2 Missing JWT Token",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"me"
+							]
+						},
+						"description": "Demonstrates 401 Unauthorized response when calling protected endpoint without Bearer token."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 401 Unauthorized\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"pm.test(\"Token missing error code returned\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(false);",
+									"    pm.expect(json.data.code).to.eql(\"token_missing\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "6.3 Forbidden Review Update",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Forbidden Update\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/client/reviews/{{forbidden_review_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"reviews",
+								"{{forbidden_review_id}}"
+							]
+						},
+						"description": "Demonstrates 403 Forbidden response when attempting to update an approved review, a protected review, or a review owned by another user. Populate `forbidden_review_id` in the environment with an existing review ID that the active token is not allowed to edit. Do not run automatically in Collection Runner. If `forbidden_review_id` is empty or non-existent, API will return 404 instead of 403."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 403 Forbidden\", function () {",
+									"    pm.response.to.have.status(403);",
+									"});",
+									"pm.test(\"Permission error message returned\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(false);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "6.4 Book Not Found",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/client/books/non-existent-book-slug-xyz",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"client",
+								"books",
+								"non-existent-book-slug-xyz"
+							]
+						},
+						"description": "Demonstrates 404 Not Found response when requesting a non-existent or unpublished book."
+					},
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let json;",
+									"pm.test(\"Status code is 404 Not Found\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"pm.test(\"Book not found message returned\", function () {",
+									"    json = pm.response.json();",
+									"    pm.expect(json.success).to.eql(false);",
+									"    pm.expect(json.message).to.eql(\"Book not found.\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				}
+			]
+		}
+	]
+}
