@@ -1,0 +1,11 @@
+.git
+.idea
+.vscode
+vendor
+node_modules
+public/build
+storage/framework/cache/data
+storage/logs
+bookhive_dashboard.sql
+bookhive_dashboard.zip
+.env
