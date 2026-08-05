@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Models\Book;
 use App\Models\BookReview;
 use App\Models\User;
+use App\Support\BookHiveCache;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -202,16 +203,18 @@ class DashboardController extends Controller
             return [];
         }
 
-        return collect([
-            User::ROLE_SUPER_ADMIN,
-            User::ROLE_ADMIN,
-            User::ROLE_EDITOR,
-            User::ROLE_REVIEWER,
-            User::ROLE_CUSTOMER,
-        ])->map(fn (string $role) => [
-            'label' => $role,
-            'value' => User::role($role)->count(),
-        ])->values()->all();
+        return BookHiveCache::rememberAdminUsersByRole(function () {
+            return collect([
+                User::ROLE_SUPER_ADMIN,
+                User::ROLE_ADMIN,
+                User::ROLE_EDITOR,
+                User::ROLE_REVIEWER,
+                User::ROLE_CUSTOMER,
+            ])->map(fn (string $role) => [
+                'label' => $role,
+                'value' => User::role($role)->count(),
+            ])->values()->all();
+        });
     }
 
     /**

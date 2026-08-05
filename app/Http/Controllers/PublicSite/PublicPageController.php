@@ -4,6 +4,7 @@ namespace App\Http\Controllers\PublicSite;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppSetting;
+use App\Support\BookHiveCache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,12 +26,14 @@ class PublicPageController extends Controller
 
     private function developer(): array
     {
-        $settings = AppSetting::whereIn('key', [
-            'contact.github',
-            'contact.linkedin',
-            'contact.portfolio',
-            'contact.email',
-        ])->pluck('value', 'key');
+        $settings = BookHiveCache::rememberPublicContact(function () {
+            return AppSetting::whereIn('key', [
+                'contact.github',
+                'contact.linkedin',
+                'contact.portfolio',
+                'contact.email',
+            ])->pluck('value', 'key');
+        });
 
         return [
             'name' => env('BOOKHIVE_DEVELOPER_NAME', 'Frengki Josua Purba'),

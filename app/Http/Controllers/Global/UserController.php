@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Global\StoreUpdateUserRequest;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\AuditLogger;
+use App\Support\BookHiveCache;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\PermissionRegistrar;
-use App\Support\AuditLogger;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\PermissionRegistrar;
 
 class UserController extends Controller
 {
@@ -108,6 +109,7 @@ class UserController extends Controller
             $target->update($payload);
             $target->syncRoles([$validated['roles']]);
             app(PermissionRegistrar::class)->forgetCachedPermissions();
+            BookHiveCache::forgetAdminUsersByRole();
 
             AuditLogger::record('edit user', $target, 'User account updated.', array_merge($oldValues, ['roles' => $oldRoles]), array_merge($target->only(['name', 'email', 'status']), ['roles' => [$validated['roles']]]), $actor, $request);
 
@@ -135,6 +137,7 @@ class UserController extends Controller
         ]);
         $user->syncRoles([$validated['roles']]);
         app(PermissionRegistrar::class)->forgetCachedPermissions();
+        BookHiveCache::forgetAdminUsersByRole();
 
         AuditLogger::record('create user', $user, 'Dashboard user created.', [], array_merge($user->only(['name', 'email', 'status']), ['roles' => [$validated['roles']]]), $actor, $request);
 
@@ -155,6 +158,7 @@ class UserController extends Controller
 
         $oldValues = array_merge($target->only(['name', 'email', 'status']), ['roles' => $target->getRoleNames()->values()->all()]);
         $target->delete();
+        BookHiveCache::forgetAdminUsersByRole();
 
         AuditLogger::record('delete user', $target, 'User account soft-deleted.', $oldValues, [], $request->user(), $request);
 

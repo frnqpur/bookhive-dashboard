@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Providers\RouteServiceProvider;
 use App\Support\AuditLogger;
+use App\Support\BookHiveCache;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -55,6 +56,7 @@ class RegisteredUserController extends Controller
         ]);
 
         $user->syncRoles([$validated['role']]);
+        BookHiveCache::forgetAdminUsersByRole();
 
         AuditLogger::record('register', $user, 'Public user registered with selected role.', [], ['role' => $validated['role'], 'email' => $user->email], $user, $request);
 
