@@ -70,9 +70,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-php-8.2-composer-
 
-      - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-interaction --no-progress
-
       - name: Prepare Laravel runtime directories
         run: |
           mkdir -p storage/framework/cache/data
@@ -80,6 +77,10 @@ jobs:
           mkdir -p storage/framework/views
           mkdir -p storage/logs
           mkdir -p bootstrap/cache
+          chmod -R u+rwX storage bootstrap/cache
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run PHPUnit
         run: php artisan test
